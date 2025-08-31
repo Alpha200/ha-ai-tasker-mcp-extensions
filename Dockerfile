@@ -34,7 +34,7 @@ COPY main.py .
 VOLUME ["/app/data"]
 
 # Expose the port the app runs on
-EXPOSE 8080
+EXPOSE 8100
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser && \
