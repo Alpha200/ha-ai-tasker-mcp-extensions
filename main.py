@@ -1,3 +1,6 @@
+import datetime
+
+import pytz
 from fastmcp import FastMCP
 from typing import Annotated
 import aiohttp
@@ -7,7 +10,14 @@ HA_URL = os.getenv("HA_URL", "http://localhost:8123")
 HA_TOKEN = os.getenv("HA_TOKEN")
 HA_NOTIFY_SERVICE = os.getenv("HA_NOTIFY_SERVICE", "mobile_app_phone")
 
-mcp = FastMCP("HA Memory")
+mcp = FastMCP("HA Tasker MCP Extensions")
+
+
+@mcp.tool
+async def get_current_time_for_user() -> str:
+    """Get the current date and time in the user's timezone in ISO format"""
+    timezone = pytz.timezone('Europe/Berlin')
+    return datetime.datetime.now(timezone).isoformat()
 
 
 @mcp.tool

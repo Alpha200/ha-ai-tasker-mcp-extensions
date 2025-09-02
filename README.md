@@ -5,24 +5,25 @@ A FastMCP server that provides Home Assistant integration tools for AI assistant
 ## Features
 
 - **User Notifications**: Send notifications to mobile devices through Home Assistant's notify service
+- **Current Time**: Get the current date and time in the user's timezone
 
 ## Setup
 
 ### Environment Variables
 
-Set the following environment variables:
+Set the following environment variables before running:
 
-- `HA_TOKEN`: Your Home Assistant long-lived access token (required)
+- `HA_TOKEN`: Your Home Assistant long-lived access token (**required**)
 - `HA_URL`: Your Home Assistant URL (default: `http://localhost:8123`)
 - `HA_NOTIFY_SERVICE`: The notify service name (default: `mobile_app_phone`)
 
-### Installation
+## Installation
 
 ```bash
 poetry install
 ```
 
-### Running
+## Running
 
 ```bash
 python main.py
@@ -30,10 +31,9 @@ python main.py
 
 The server will start on `http://0.0.0.0:8100` using Server-Sent Events (SSE) transport.
 
-## Usage
+## Tools
 
-### notify_user Tool
-
+### notify_user
 Sends a notification to the user's mobile phone via Home Assistant.
 
 **Parameters:**
@@ -43,6 +43,9 @@ Sends a notification to the user's mobile phone via Home Assistant.
 **Returns:**
 - Success: `{"status": "success", "message": "Notification sent successfully"}`
 - Error: `{"status": "error", "message": "Error description"}`
+
+### get_current_time_for_user
+Returns the current date and time in the user's timezone (Europe/Berlin) in ISO format.
 
 ## Home Assistant Setup
 
