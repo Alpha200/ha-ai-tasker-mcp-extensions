@@ -11,6 +11,8 @@ HA_TOKEN = os.getenv("HA_TOKEN")
 HA_NOTIFY_SERVICE = os.getenv("HA_NOTIFY_SERVICE", "mobile_app_phone")
 HA_DEVICE_TRACKER_ENTITY = os.getenv("HA_DEVICE_TRACKER_ENTITY", "device_tracker.phone")
 HA_WEATHER_ENTITY = os.getenv("HA_WEATHER_ENTITY", "weather.forecast_home")
+HA_CALENDAR_ENTITY = os.getenv("HA_CALENDAR_ENTITY", "calendar.personal")
+HA_TIMEZONE = os.getenv("HA_TIMEZONE", "Europe/Berlin")
 
 mcp = FastMCP("HA Tasker MCP Extensions")
 
@@ -18,7 +20,7 @@ mcp = FastMCP("HA Tasker MCP Extensions")
 @mcp.tool
 async def get_current_time_for_user() -> str:
     """Get the current date and time in the user's timezone in ISO format"""
-    timezone = pytz.timezone('Europe/Berlin')
+    timezone = pytz.timezone(HA_TIMEZONE)
     return datetime.datetime.now(timezone).isoformat()
 
 
@@ -83,7 +85,7 @@ async def get_current_geofence_for_user() -> str:
 
 @mcp.tool
 async def get_weather_forecast_24h() -> dict:
-    """Fetch the weather forecast for the next 24 hours from Home Assistant.
+    """Fetch the weather forecast for the next 24 hours.
 
     Returns hourly forecast data with:
     - datetime: ISO timestamp for each forecast hour
@@ -127,6 +129,71 @@ async def get_weather_forecast_24h() -> dict:
         "status": "success",
         "forecast_24h": forecast_data,
         "forecast_count": len(forecast_data)
+    }
+
+
+@mcp.tool
+async def get_calendar_events_48h() -> dict:
+    """Fetch users calendar events for the next 48 hours.
+    If the time component of a calendar entry is missing, it is an all-day event.
+
+    Returns calendar events with:
+    - start: Event start datetime
+    - end: Event end datetime
+    - summary: Event title/summary
+    - description: Event description (if available)
+    - location: Event location (if available)
+    """
+    entity_id = HA_CALENDAR_ENTITY
+
+    timezone = pytz.timezone(HA_TIMEZONE)
+    now = datetime.datetime.now(timezone)
+    end_time = now + datetime.timedelta(hours=48)
+
+    start_time_iso = now.isoformat()
+    end_time_iso = end_time.isoformat()
+
+    calendar_payload = {
+        "entity_id": entity_id,
+        "start_date_time": start_time_iso,
+        "end_date_time": end_time_iso
+    }
+    calendar_result = await ha_request("POST", "/api/services/calendar/get_events?return_response", calendar_payload)
+
+    if calendar_result["status"] != 200:
+        return {
+            "status": "error",
+            "message": f"Failed to fetch calendar events: {calendar_result['status']} - {calendar_result['data']}"
+        }
+
+    events_data = []
+    service_data = calendar_result["data"]
+
+    if "service_response" in service_data and entity_id in service_data["service_response"]:
+        entity_data = service_data["service_response"][entity_id]
+        if "events" in entity_data:
+            events = entity_data["events"]
+
+            for event in events:
+                event_data = {
+                    "start": event.get("start"),
+                    "end": event.get("end"),
+                    "summary": event.get("summary")
+                }
+
+                description = event.get("description")
+                if description:
+                    event_data["description"] = description
+
+                location = event.get("location")
+                if location:
+                    event_data["location"] = location
+
+                events_data.append(event_data)
+
+    return {
+        "status": "success",
+        "events": events_data,
     }
 
 
