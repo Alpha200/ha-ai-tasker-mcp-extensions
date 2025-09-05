@@ -1,68 +1,74 @@
-# HA AI Tasker MCP Extensions
+# Home Assistant AI Tasker MCP Extensions
 
-A FastMCP server that provides Home Assistant integration tools for AI assistants.
+This project provides MCP (Model Context Protocol) extensions for integrating with Home Assistant, allowing AI assistants to interact with your smart home devices and services.
 
 ## Features
 
-- **User Notifications**: Send notifications to mobile devices through Home Assistant's notify service
-- **Current Time**: Get the current date and time in the user's timezone
-- **Current Geofence**: Fetch the user's current geofence (zone) from Home Assistant via a device tracker entity
+The following MCP tools are available:
+
+### 🕒 Time Management
+- **get_current_time_for_user**: Get the current date and time in the user's timezone (Europe/Berlin) in ISO format
+
+### 📍 Location Services  
+- **get_current_geofence_for_user**: Fetch the current geofence (zone) of the user from Home Assistant via the device tracker entity
+
+### 🌤️ Weather Services
+- **get_weather_forecast_24h**: Fetch the weather forecast for the next 24 hours from Home Assistant. Returns hourly forecast data with datetime, condition, temperature (°C), and wind speed (km/h)
+
+### 📱 Notifications
+- **notify_user**: Send notifications to the user's mobile device through Home Assistant
+
+## Environment Variables
+
+Configure the following environment variables:
+
+| Variable | Description | Default Value |
+|----------|-------------|---------------|
+| `HA_URL` | Home Assistant base URL | `http://localhost:8123` |
+| `HA_TOKEN` | Home Assistant long-lived access token | Required |
+| `HA_NOTIFY_SERVICE` | Notification service name | `mobile_app_phone` |
+| `HA_DEVICE_TRACKER_ENTITY` | Device tracker entity ID | `device_tracker.phone` |
+| `HA_WEATHER_ENTITY` | Weather entity ID | `weather.forecast_home` |
 
 ## Setup
 
-### Environment Variables
+1. Install dependencies:
+   ```bash
+   poetry install
+   ```
 
-Set the following environment variables before running:
+2. Set up your environment variables in a `.env` file or export them directly
 
-- `HA_TOKEN`: Your Home Assistant long-lived access token (**required**)
-- `HA_URL`: Your Home Assistant URL (default: `http://localhost:8123`)
-- `HA_NOTIFY_SERVICE`: The notify service name (default: `mobile_app_phone`)
-- `HA_DEVICE_TRACKER_ENTITY`: The device tracker entity ID to use for geofence queries (default: `device_tracker.phone`)
-
-## Installation
-
-```bash
-poetry install
-```
-
-## Running
-
-```bash
-python main.py
-```
+3. Run the MCP server:
+   ```bash
+   python main.py
+   ```
 
 The server will start on `http://0.0.0.0:8100` using Server-Sent Events (SSE) transport.
 
-## Tools
+## Home Assistant Configuration
 
-### notify_user
-Sends a notification to the user's mobile phone via Home Assistant.
+Ensure you have the following entities configured in your Home Assistant:
 
-**Parameters:**
-- `message_title`: The title of the message
-- `message_content`: The content of the message
+- A weather integration providing hourly forecasts
+- A device tracker for location services
+- A notification service for mobile alerts
 
-**Returns:**
-- Success: `{"status": "success", "message": "Notification sent successfully"}`
-- Error: `{"status": "error", "message": "Error description"}`
+## API Details
 
-### get_current_time_for_user
-Returns the current date and time in the user's timezone (Europe/Berlin) in ISO format.
+### Weather Forecast Response
 
-### get_current_geofence_for_user
-Fetches the current geofence (zone) of the user from Home Assistant using the configured device tracker entity.
+The weather forecast tool returns 24 hours of hourly forecast data with:
+- **datetime**: ISO timestamp for each forecast hour
+- **condition**: Weather condition (sunny, partlycloudy, cloudy, rainy, etc.)
+- **temperature**: Temperature in Celsius (°C)
+- **wind_speed**: Wind speed in km/h
+- **status**: Success/error status and forecast count
 
-**Parameters:**
-- None
+### Geofence Response
 
-**Returns:**
-- The current geofence/zone as a string (e.g., `home`, `work`, `not_home`, or `on the way`)
-- If the entity is not found: `Entity '<entity_id>' not found in Home Assistant.`
-- On error: `Failed to fetch geofence: <status> - <error>`
+Returns the current zone/location of the tracked device, or "on the way" if between zones.
 
-## Home Assistant Setup
+### Notification Response
 
-Make sure you have:
-1. A long-lived access token created in Home Assistant
-2. The mobile app integration set up for your device
-3. The correct notify service name (check in Developer Tools → Services)
+Provides success/error status for sent notifications.

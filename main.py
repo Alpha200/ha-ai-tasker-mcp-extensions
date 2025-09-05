@@ -10,6 +10,7 @@ HA_URL = os.getenv("HA_URL", "http://localhost:8123")
 HA_TOKEN = os.getenv("HA_TOKEN")
 HA_NOTIFY_SERVICE = os.getenv("HA_NOTIFY_SERVICE", "mobile_app_phone")
 HA_DEVICE_TRACKER_ENTITY = os.getenv("HA_DEVICE_TRACKER_ENTITY", "device_tracker.phone")
+HA_WEATHER_ENTITY = os.getenv("HA_WEATHER_ENTITY", "weather.forecast_home")
 
 mcp = FastMCP("HA Tasker MCP Extensions")
 
@@ -78,6 +79,55 @@ async def get_current_geofence_for_user() -> str:
         return f"Entity '{entity_id}' not found in Home Assistant."
     else:
         return f"Failed to fetch geofence: {result['status']} - {result['data']}"
+
+
+@mcp.tool
+async def get_weather_forecast_24h() -> dict:
+    """Fetch the weather forecast for the next 24 hours from Home Assistant.
+
+    Returns hourly forecast data with:
+    - datetime: ISO timestamp for each forecast hour
+    - condition: weather condition (sunny, partlycloudy, cloudy, rainy, etc.)
+    - temperature: temperature in Celsius (°C)
+    - wind_speed: wind speed in km/h
+    """
+    entity_id = HA_WEATHER_ENTITY
+
+    # Get forecast data using the weather.get_forecasts service with return_response parameter
+    forecast_payload = {
+        "entity_id": entity_id,
+        "type": "hourly"
+    }
+    forecast_result = await ha_request("POST", "/api/services/weather/get_forecasts?return_response", forecast_payload)
+
+    if forecast_result["status"] != 200:
+        return {
+            "status": "error",
+            "message": f"Failed to fetch weather forecast: {forecast_result['status']} - {forecast_result['data']}"
+        }
+
+    forecast_data = []
+    service_data = forecast_result["data"]
+
+    if "service_response" in service_data and entity_id in service_data["service_response"]:
+        entity_data = service_data["service_response"][entity_id]
+        if "forecast" in entity_data:
+            all_forecasts = entity_data["forecast"]
+            limited_forecasts = all_forecasts[:24] if len(all_forecasts) >= 24 else all_forecasts
+
+            for forecast in limited_forecasts:
+                forecast_data.append({
+                    "datetime": forecast.get("datetime"),
+                    "condition": forecast.get("condition"),
+                    "temperature": forecast.get("temperature"),
+                    "wind_speed": forecast.get("wind_speed")
+                })
+
+    return {
+        "status": "success",
+        "forecast_24h": forecast_data,
+        "forecast_count": len(forecast_data)
+    }
 
 
 if __name__ == "__main__":
