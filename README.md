@@ -19,21 +19,31 @@ The following MCP tools are available:
 - **get_calendar_events_48h**: Fetch calendar events for the next 48 hours from Home Assistant. Returns event details including start/end times, summary, description, and location
 
 ### 📱 Notifications
-- **notify_user**: Send notifications to the user's mobile device through Home Assistant
+- **notify_user**: Send notifications to the user via Home Assistant or Matrix (configurable)
 
 ## Environment Variables
 
 Configure the following environment variables:
 
-| Variable | Description | Default Value |
-|----------|-------------|---------------|
-| `HA_URL` | Home Assistant base URL | `http://localhost:8123` |
-| `HA_TOKEN` | Home Assistant long-lived access token | Required |
-| `HA_NOTIFY_SERVICE` | Notification service name | `mobile_app_phone` |
-| `HA_DEVICE_TRACKER_ENTITY` | Device tracker entity ID | `device_tracker.phone` |
-| `HA_WEATHER_ENTITY` | Weather entity ID | `weather.forecast_home` |
-| `HA_CALENDAR_ENTITY` | Calendar entity ID | `calendar.personal` |
-| `HA_TIMEZONE` | Timezone for time calculations | `Europe/Berlin` |
+| Variable                   | Description                            | Default Value            |
+|----------------------------|----------------------------------------|--------------------------|
+| `HA_URL`                   | Home Assistant base URL                | `http://localhost:8123`  |
+| `HA_TOKEN`                 | Home Assistant long-lived access token | Required for HA features |
+| `HA_NOTIFY_SERVICE`        | Notification service name              | `mobile_app_phone`       |
+| `HA_DEVICE_TRACKER_ENTITY` | Device tracker entity ID               | `device_tracker.phone`   |
+| `HA_WEATHER_ENTITY`        | Weather entity ID                      | `weather.forecast_home`  |
+| `HA_CALENDAR_ENTITY`       | Calendar entity ID                     | `calendar.personal`      |
+| `HA_TIMEZONE`              | Timezone for time calculations         | `Europe/Berlin`          |
+| `NOTIFICATION_METHOD`      | Notification method                    | `homeassistant`          |
+
+### Matrix Configuration (when NOTIFICATION_METHOD=matrix)
+
+| Variable                | Description                              | Required |
+|-------------------------|------------------------------------------|----------|
+| `MATRIX_HOMESERVER_URL` | Matrix homeserver URL (e.g., matrix.org) | Yes      |
+| `MATRIX_USERNAME`       | Matrix bot username                      | Yes      |
+| `MATRIX_PASSWORD`       | Matrix bot password                      | Yes      |
+| `MATRIX_ROOM_ID`        | Matrix room ID to send messages to       | Yes      |
 
 ## Setup
 
@@ -58,7 +68,20 @@ Ensure you have the following entities configured in your Home Assistant:
 - A weather integration providing hourly forecasts
 - A calendar integration for event management
 - A device tracker for location services
-- A notification service for mobile alerts
+- A notification service for mobile alerts (if using Home Assistant notifications)
+
+## Matrix Configuration
+
+To use Matrix for notifications instead of Home Assistant:
+
+1. Set `NOTIFICATION_METHOD=matrix`
+2. Configure the Matrix environment variables:
+   - `MATRIX_HOMESERVER_URL`: Your Matrix homeserver (e.g., `matrix.org` or `https://matrix.example.com`)
+   - `MATRIX_USERNAME`: Your Matrix bot username (e.g., `@botname:matrix.org`)
+   - `MATRIX_PASSWORD`: Your Matrix bot password
+   - `MATRIX_ROOM_ID`: The room ID where notifications should be sent (e.g., `!roomid:matrix.org`)
+
+The application will automatically fall back to Home Assistant notifications if Matrix configuration is incomplete or fails.
 
 ## API Details
 
@@ -87,4 +110,4 @@ Returns the current zone/location of the tracked device, or "on the way" if betw
 
 ### Notification Response
 
-Provides success/error status for sent notifications.
+Provides success/error status for sent notifications. Supports both Home Assistant and Matrix messaging based on configuration.
