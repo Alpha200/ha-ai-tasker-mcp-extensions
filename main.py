@@ -9,12 +9,10 @@ from matrix_client import MatrixClient
 
 HA_URL = os.getenv("HA_URL", "http://localhost:8123")
 HA_TOKEN = os.getenv("HA_TOKEN")
-HA_NOTIFY_SERVICE = os.getenv("HA_NOTIFY_SERVICE", "mobile_app_phone")
 HA_DEVICE_TRACKER_ENTITY = os.getenv("HA_DEVICE_TRACKER_ENTITY", "device_tracker.phone")
 HA_WEATHER_ENTITY = os.getenv("HA_WEATHER_ENTITY", "weather.forecast_home")
 HA_CALENDAR_ENTITY = os.getenv("HA_CALENDAR_ENTITY", "calendar.personal")
 HA_TIMEZONE = os.getenv("HA_TIMEZONE", "Europe/Berlin")
-NOTIFICATION_METHOD = os.getenv("NOTIFICATION_METHOD", "homeassistant")  # "homeassistant" or "matrix"
 
 # Matrix configuration
 MATRIX_HOMESERVER_URL = os.getenv("MATRIX_HOMESERVER_URL")
@@ -24,20 +22,13 @@ MATRIX_ROOM_ID = os.getenv("MATRIX_ROOM_ID")
 
 mcp = FastMCP("HA Tasker MCP Extensions")
 
-# Initialize Matrix client if needed
-matrix_client = None
-if NOTIFICATION_METHOD.lower() == "matrix":
-    try:
-        matrix_client = MatrixClient(
-            homeserver_url=MATRIX_HOMESERVER_URL,
-            username=MATRIX_USERNAME,
-            password=MATRIX_PASSWORD,
-            room_id=MATRIX_ROOM_ID
-        )
-    except (ValueError, TypeError) as e:
-        print(f"Matrix configuration error: {e}")
-        print("Falling back to Home Assistant notifications")
-        NOTIFICATION_METHOD = "homeassistant"
+# Initialize Matrix client
+matrix_client = MatrixClient(
+    homeserver_url=MATRIX_HOMESERVER_URL,
+    username=MATRIX_USERNAME,
+    password=MATRIX_PASSWORD,
+    room_id=MATRIX_ROOM_ID
+)
 
 
 @mcp.tool
@@ -80,25 +71,9 @@ async def ha_request(method: str, endpoint: str, payload: dict = None) -> dict:
 async def notify_user(
         message_content: Annotated[str, "The content of the message"],
 ):
-    """Send a notification to the user via Home Assistant or Matrix (based on configuration)"""
-
-    if NOTIFICATION_METHOD.lower() == "matrix" and matrix_client:
-        # Use Matrix messaging
-        result = await matrix_client.send_message(message_content)
-        return result
-    else:
-        # Use Home Assistant notifications (default)
-        if not HA_TOKEN:
-            return {"status": "error", "message": "HA_TOKEN not configured for Home Assistant notifications"}
-
-        payload = {
-            "message": message_content
-        }
-        result = await ha_request("POST", f"/api/services/notify/{HA_NOTIFY_SERVICE}", payload)
-        if result["status"] == 200:
-            return {"status": "success", "message": "Notification sent successfully"}
-        else:
-            return {"status": "error", "message": f"Failed to send notification: {result['status']} - {result['data']}"}
+    """Send a chat message to the user via Matrix"""
+    result = await matrix_client.send_message(message_content)
+    return result
 
 
 @mcp.tool
