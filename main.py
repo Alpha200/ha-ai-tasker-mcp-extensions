@@ -41,10 +41,14 @@ if NOTIFICATION_METHOD.lower() == "matrix":
 
 
 @mcp.tool
-async def get_current_time_for_user() -> str:
-    """Get the current date and time in the user's timezone in ISO format"""
+async def get_current_time_for_user() -> dict:
+    """Get the current date and time in the user's timezone with day of week"""
     timezone = pytz.timezone(HA_TIMEZONE)
-    return datetime.datetime.now(timezone).isoformat()
+    now = datetime.datetime.now(timezone)
+    return {
+        "datetime": now.isoformat(),
+        "day_of_week": now.strftime("%A")
+    }
 
 
 async def ha_request(method: str, endpoint: str, payload: dict = None) -> dict:
